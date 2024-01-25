@@ -51,6 +51,7 @@ class WorkerProcess(Process):
         self.threads = list()
 
         self._blocker = Event()
+        self._running = True
 
     def _init_threads(self):
         """It initializes the threads of the process and adds the thread to the 'threads' list, which will be automatically started and stopped in the 'run' method.
@@ -94,6 +95,5 @@ class WorkerProcess(Process):
         """This method stops the process by set the event, which has role to block the running of process, while the subthread executes their functionalities.
         The main process or other process throught this method can stop the running of this process.
         """
-
-        self._blocker.set()
-        time.sleep(2)
+        self._running = False
+        self.terminate()

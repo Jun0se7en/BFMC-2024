@@ -53,6 +53,7 @@ class processCamera(WorkerProcess):
         self.pipeSend = pipeSend
         self.debugging = debugging
         super(processCamera, self).__init__(self.queuesList)
+        # print('Initialize camera process!!!')
 
     # ===================================== STOP ==========================================
     def stop(self):
@@ -86,6 +87,12 @@ if __name__ == "__main__":
     import cv2
     import base64
     import numpy as np
+    import os
+
+    try:
+        os.mkdir('./test/')
+    except:
+        pass
 
     allProcesses = list()
 
@@ -104,7 +111,6 @@ if __name__ == "__main__":
 
     process.daemon = True
     process.start()
-
     time.sleep(4)
     if debugg:
         logger.warning("getting")
@@ -116,5 +122,6 @@ if __name__ == "__main__":
     image = cv2.imdecode(img, cv2.IMREAD_COLOR)
     if debugg:
         logger.warning("got")
-    cv2.imwrite("test.jpg", image)
+    cv2.imwrite("./test/test.jpg", image)
     process.stop()
+
