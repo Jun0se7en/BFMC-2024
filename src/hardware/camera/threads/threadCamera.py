@@ -25,11 +25,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 import cv2
 import threading
 import base64
-import picamera2
 import time
+import numpy as np
+import os
 
 from multiprocessing import Pipe
 from src.utils.messages.allMessages import (
@@ -70,6 +72,7 @@ class threadCamera(ThreadWithStop):
         self._init_camera()
         self.Queue_Sending()
         self.Configs()
+        # print('Initialize camera thread!!!')
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
@@ -104,6 +107,8 @@ class threadCamera(ThreadWithStop):
 
     # =============================== STOP ================================================
     def stop(self):
+        # cv2.destroyAllWindows()
+        self.camera.release()
         if self.recording:
             self.video_writer.release()
         super(threadCamera, self).stop()
@@ -115,13 +120,6 @@ class threadCamera(ThreadWithStop):
             message = self.pipeRecvConfig.recv()
             message = message["value"]
             print(message)
-            self.camera.set_controls(
-                {
-                    "AeEnable": False,
-                    "AwbEnable": False,
-                    message["action"]: float(message["value"]),
-                }
-            )
         threading.Timer(1, self.Configs).start()
 
     # ================================ RUN ================================================
@@ -148,26 +146,22 @@ class threadCamera(ThreadWithStop):
             except Exception as e:
                 print(e)
             if self.debugger == True:
-                self.logger.warning("getting image")
-            request = self.camera.capture_array("main")
+                self.logger.warning("Getting image!!!")
+            ret, request = self.camera.read()
+            if not ret:
+                print("Read failed")
             if var:
                 if self.recording == True:
                     cv2_image = cv2.cvtColor(request, cv2.COLOR_RGB2BGR)
                     self.video_writer.write(cv2_image)
-                request2 = self.camera.capture_array(
-                    "lores"
-                )  # Will capture an array that can be used by OpenCV library
-                request2 = request2[:360, :]
-                _, encoded_img = cv2.imencode(".jpg", request2)
-                _, encoded_big_img = cv2.imencode(".jpg", request)
+                _, encoded_img = cv2.imencode(".jpg", request)
                 image_data_encoded = base64.b64encode(encoded_img).decode("utf-8")
-                image_data_encoded2 = base64.b64encode(encoded_big_img).decode("utf-8")
                 self.queuesList[mainCamera.Queue.value].put(
                     {
                         "Owner": mainCamera.Owner.value,
                         "msgID": mainCamera.msgID.value,
                         "msgType": mainCamera.msgType.value,
-                        "msgValue": image_data_encoded2,
+                        "msgValue": image_data_encoded,
                     }
                 )
                 self.queuesList[serialCamera.Queue.value].put(
@@ -186,14 +180,8 @@ class threadCamera(ThreadWithStop):
 
     # ================================ INIT CAMERA ========================================
     def _init_camera(self):
-        """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
-        self.camera = picamera2.Picamera2()
-        config = self.camera.create_preview_configuration(
-            buffer_count=1,
-            queue=False,
-            main={"format": "XBGR8888", "size": (2048, 1080)},
-            lores={"size": (480, 360)},
-            encode="lores",
-        )
-        self.camera.configure(config)
-        self.camera.start()
+        # print('Initialize Camera!!!')
+        self.camera = cv2.VideoCapture(0)
+        if not self.camera.isOpened():
+            print("Capture failed")
+        
