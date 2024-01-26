@@ -6,7 +6,7 @@ import cv2
 import struct
 
 # Kết nối đến server
-server_address = ('192.168.2.152', 1234)  # Địa chỉ và cổng của server
+server_address = ('192.168.0.118', 1234)  # Địa chỉ và cổng của server
 client_socket = socket.socket()
 print(socket.gethostname())
 client_socket.connect(server_address)

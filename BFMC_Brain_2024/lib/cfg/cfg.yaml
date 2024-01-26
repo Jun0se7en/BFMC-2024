@@ -1,0 +1,4 @@
+weights: 'models/yolov5n.engine'
+imgsize_yolo: [640, 640]
+visualize: True
+save_dir: runs
